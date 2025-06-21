@@ -1,42 +1,112 @@
-# References: https://blog.socratesk.com/blog/2018/08/16/opencv-hsv-selector
-# - Modified HSV boundaries and rectangular box
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>VCamera App</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Arial', sans-serif;
+      background: #121212;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
 
-import numpy as np
-import cv2
+    h1 {
+      margin-bottom: 20px;
+    }
 
-cap = cv2.VideoCapture(0)
+    #camera {
+      width: 100%;
+      max-width: 400px;
+      border: 2px solid #444;
+      border-radius: 10px;
+    }
 
-# Specify HSV range of object
-objectHSVLower = np.array([110, 45, 45])
-objectHSVUpper = np.array([120, 255, 255])
+    video {
+      width: 100%;
+      border-radius: 10px;
+    }
 
-while True:
-        # Read captured webcam frame
-        _, frame = cap.read()
+    #capture-btn {
+      margin: 20px 0;
+      padding: 12px 24px;
+      font-size: 1rem;
+      background-color: #00bcd4;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      cursor: pointer;
+    }
 
-        # Convert color frame into HSV
-        hsv_img = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    #capture-btn:hover {
+      background-color: #0097a7;
+    }
 
-        mask = cv2.inRange(hsv_img, objectHSVLower, objectHSVUpper)
+    #snapshot {
+      margin-top: 10px;
+      max-width: 100%;
+      border-radius: 10px;
+    }
 
-        # Find contours from HSV masked image
-        contours, hierarchy = cv2.findContours(mask,cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[-2:]
-        areas = [cv2.contourArea(c) for c in contours]
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 1.5rem;
+      }
 
-    # If there are countours
-        if len(areas) > 0:
-                max_index = np.argmax(areas)
-                count = contours[max_index]
-                x,y,w,h = cv2.boundingRect(count)
-                cv2.rectangle(frame,(x,y),(x+w,y+h),(0,255,0), 2)
+      #capture-btn {
+        padding: 10px 20px;
+        font-size: 0.9rem;
+      }
+    }
+  </style>
+</head>
+<body>
 
-    # Display the resulting frame
-        cv2.imshow('frame',frame)
+  <h1>📸 VCamera</h1>
 
-        # If "q" is pressed on the keyboard, 
-    # exit this loop
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
+  <div id="camera">
+    <video id="video" autoplay playsinline></video>
+  </div>
 
-cap.release()
-cv2.destroyAllWindows()
+  <button id="capture-btn">Capture</button>
+
+  <canvas id="canvas" style="display:none;"></canvas>
+  <img id="snapshot" alt="Captured Image" />
+
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const snapshot = document.getElementById('snapshot');
+    const captureBtn = document.getElementById('capture-btn');
+
+    // Access camera
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+      } catch (err) {
+        alert('Camera access denied or not supported on this device.');
+        console.error(err);
+      }
+    }
+
+    // Capture image
+    captureBtn.addEventListener('click', () => {
+      const context = canvas.getContext('2d');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      snapshot.src = canvas.toDataURL('image/png');
+    });
+
+    // Start on load
+    window.addEventListener('load', startCamera);
+  </script>
+
+</body>
+</html>
